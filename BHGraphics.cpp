@@ -45,6 +45,7 @@ void BHGraphics::drawRect(int x, int y, int w, int h) {
     r.y = y;
     r.w = w;
     r.h = h;
+
     SDL_RenderDrawRect(renderer, &r);
 }
 

@@ -7,20 +7,23 @@
 #include <vector>
 
 
-BHTree simulate(std::vector<Body *> &bodies, BHGraphics* g, double dt) {
+BHTree simulate(std::vector<Body *> &bodies, BHGraphics *g, double dt) {
     Quad *q = new Quad(512, 512, 1024);
 
     BHTree bhTree = BHTree(q);
     for (int i = 0; i < bodies.size(); i++) {
         auto body = bodies[i];
-        if(!body->in(q)) {
-            bodies.erase(bodies.begin()+i);
+        if (!body->in(q)) {
+            bodies.erase(bodies.begin() + i);
         }
         body->dampenInertia();
-        bhTree.insert(body);
+        bhTree.insert(*body);
     }
 
-    // Calculate forces, the actual algorithm...
+//     Calculate forces, the actual algorithm...
+    for (auto body : bodies) {
+        bhTree.updateForce(body);
+    }
 
     for (auto body : bodies) {
         body->update(dt);
@@ -30,7 +33,7 @@ BHTree simulate(std::vector<Body *> &bodies, BHGraphics* g, double dt) {
         body->draw(g);
     }
 
-    bhTree.draw(g);
+//    bhTree.draw(g);
 
     return bhTree;
 }
@@ -52,8 +55,6 @@ int main() {
     auto g = BHGraphics(1024, 1048);
 
     bool running = true;
-    bool rev = false;
-    int i = 0;
     double dt = 0;
     while (running) {
         dt += 1;
@@ -72,21 +73,7 @@ int main() {
         simulate(bodies, &g, dt);
 
 
-        //        // Clock speed
-//        for(int x = 0; x <= i; x++){
-//            if(!rev){
-//                g.fillRect((1024/32) * x, 1024 - 4, 4, 4);
-//            }else{
-//                g.fillRect(1024- (1024/32) * x, 1024 - 4, 4, 4);
-//
-//            }
-//        }
-
-
-//        g.drawRect(10, 10, 10, 10 + i);
         g.render();
-//        if(i >= 32) rev = true;
-//        if(i <= 0) rev = false;
     }
 
 }

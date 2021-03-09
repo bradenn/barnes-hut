@@ -20,7 +20,7 @@ class BHTree {
 public:
     BHTree *NW = nullptr, *NE = nullptr, *SW = nullptr, *SE = nullptr;
     Quad *q = nullptr;
-    Body *b = nullptr;
+    Body b = Body();
 
     explicit BHTree(Quad *q) : q(q) {}
 
@@ -29,6 +29,10 @@ public:
     void draw(BHGraphics *bh) const;
 
     void insert(Body *body);
+
+    void insert(Body body);
+
+    void rawInsert(Body body);
 };
 
 
