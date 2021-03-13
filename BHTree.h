@@ -24,11 +24,17 @@ public:
 
     explicit BHTree(Quad *q) : q(q) {}
 
+    ~BHTree() {
+        delete NW;
+        delete NE;
+        delete SW;
+        delete SE;
+        delete q;
+    }
+
     void updateForce(Body *body);
 
     void draw(BHGraphics *bh) const;
-
-    void insert(Body *body);
 
     void insert(Body body);
 

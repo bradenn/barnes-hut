@@ -32,6 +32,7 @@ public:
     void draw(BHGraphics *bh) const{
         double sx = xm - l/2;
         double sy = ym - l/2;
+        bh->setColor(255, 255, 255);
         bh->drawRect(sx, sy, l, l);
     }
 

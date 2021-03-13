@@ -61,7 +61,7 @@ void BHTree::updateForce(Body *body) {
             }
         } else {
             double sd = q->length() / (*body).distance(b);
-            if (sd < 1) {
+            if (sd < 0.9) {
                 body->addForce(b);
             } else {
                 NW->updateForce(body);
