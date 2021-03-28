@@ -9,6 +9,8 @@
  */
 
 #include <SDL.h>
+
+
 #include <iostream>
 
 using std::string;
@@ -19,17 +21,17 @@ using std::string;
 #include "homespun_font.h"
 
 BHGraphics::BHGraphics(int w, int h) : vw(w), vh(h) {
+    SDL_SetHint(SDL_HINT_RENDER_VSYNC, "0");
     SDL_Init(SDL_INIT_EVERYTHING);
     window = SDL_CreateWindow("N-Bodies", 0, 0, w + 340 + 1, h
                                                              + 1,
                               SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "metal");
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
-    camera = new Camera{0, 0, 0, 0, 0, 0, 0.7};
+    renderer = SDL_CreateRenderer(window, -1,
+                                  SDL_RENDERER_ACCELERATED);
+    camera = new Camera{0, 0, 0, 0, 0, 0, 0.7, 1024};
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderSetScale(renderer, 2, 2);
     SDL_RenderClear(renderer);
-
     SDL_RenderPresent(renderer);
 }
 
@@ -43,7 +45,6 @@ BHGraphics::~BHGraphics() {
 void BHGraphics::clear() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 }
 
 void BHGraphics::render() {
@@ -55,12 +56,10 @@ void BHGraphics::drawRect(float x, float y, float w, float h) {
     Point2D p2 = map3D(x + w, y, 0);
     Point2D p3 = map3D(x, y + h, 0);
     Point2D p4 = map3D(x + w, y + h, 0);
-
     SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
-    SDL_RenderDrawLineF(renderer, p1.x, p2.y, p3.x, p3.y);
+    SDL_RenderDrawLineF(renderer, p1.x, p1.y, p3.x, p3.y);
     SDL_RenderDrawLineF(renderer, p3.x, p3.y, p4.x, p4.y);
     SDL_RenderDrawLineF(renderer, p2.x, p2.y, p4.x, p4.y);
-//    SDL_RenderDrawRect(renderer, &r);
 }
 
 void BHGraphics::fillRect(float x, float y, float w, float h) {
@@ -72,20 +71,18 @@ void BHGraphics::fillRect(float x, float y, float w, float h) {
     SDL_RenderFillRectF(renderer, &r);
 }
 
-
-
 void BHGraphics::setColor(int r, int g, int b) {
     SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
 }
 
-void BHGraphics::drawPixel(float x, float y) {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-    SDL_RenderDrawPointF(renderer, x, y);
+void BHGraphics::setAlphaColor(int r, int g, int b, int a) {
+    SDL_SetRenderDrawColor(renderer, r, g, b, a);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 }
 
 void BHGraphics::drawMeter(float x, float y, float w, float h, float p) {
-    auto o = new SDL_FRect {x, y, w, h};
-    auto r = new SDL_FRect {x + 2, y + 2, (w - 4)*p, h - 4};
+    auto o = new SDL_FRect{x, y, w, h};
+    auto r = new SDL_FRect{x + 2, y + 2, (w - 4) * p, h - 4};
     SDL_RenderDrawRectF(renderer, o);
     SDL_RenderFillRectF(renderer, r);
 }
@@ -135,14 +132,14 @@ d) {
     auto tbl = map3D(x + w, y, z);
     auto bbr = map3D(x, y + h, z);
     auto bbl = map3D(x + w, y + h, z);
-    SDL_RenderDrawLineF(renderer, tfr.x, tfr.y, bfr.x, bfr.y);
 
+//    drawString(std::to_string(w), 2, (tfr.x + bfr.x) / 2, (tfr.y + bfr.y) / 2);
+
+    SDL_RenderDrawLineF(renderer, tfr.x, tfr.y, bfr.x, bfr.y);
     SDL_RenderDrawLineF(renderer, tfr.x, tfr.y, tfl.x, tfl.y);
     SDL_RenderDrawLineF(renderer, tfl.x, tfl.y, bfl.x, bfl.y);
     SDL_RenderDrawLineF(renderer, bfr.x, bfr.y, bfl.x, bfl.y);
-    drawString(std::to_string((int) w) + " units", 2, (bfr.x + bfl.x) / 2 - 32,
-               (bfr.y + bfl
-                       .y) / 2 - 16);
+
     SDL_RenderDrawLineF(renderer, tfr.x, tfr.y, tbr.x, tbr.y);
     SDL_RenderDrawLineF(renderer, bfr.x, bfr.y, bbr.x, bbr.y);
     SDL_RenderDrawLineF(renderer, tfl.x, tfl.y, tbl.x, tbl.y);
@@ -152,25 +149,22 @@ d) {
     SDL_RenderDrawLineF(renderer, tbr.x, tbr.y, bbr.x, bbr.y);
     SDL_RenderDrawLineF(renderer, bbr.x, bbr.y, bbl.x, bbl.y);
     SDL_RenderDrawLineF(renderer, bbl.x, bbl.y, tbl.x, tbl.y);
-
 }
 
 void BHGraphics::drawPixel3D(float x, float y, float z) {
     Point2D loc = map3D(x, y, z);
+
     SDL_RenderDrawPointF(renderer, loc.x, loc.y);
 }
 
-void BHGraphics::drawButton(string s, float x, float y, float w, float h) {
-    drawRect(x, y, w, h);
-    drawString(s, 2, x - w / 2, y - h / 2);
+void BHGraphics::drawLine(float x1, float y1, float x2, float y2) {
+    SDL_RenderDrawLineF(renderer, x1, y1, x2, y2);
 }
 
 Point3D matMultiply(const float vec[3], float mat[3][3]) {
-
     int colsA = 3;
     int rowsA = 3;
     int colsB = 1;
-    int rowsB = 3;
 
     auto result = new float[3];
 
@@ -193,7 +187,6 @@ Point2D matMultiply2D(const float vec[2], float mat[2][3]) {
     int colsA = 2;
     int rowsA = 3;
     int colsB = 1;
-    int rowsB = 2;
 
     auto result = new float[2];
 
@@ -231,14 +224,18 @@ Point3D BHGraphics::rotate3D(Point3D p) {
 
     float in2[3] = {p2.x, p2.y, p2.z};
     Point3D p3 = matMultiply(in2, rotP);
-
-
     return p3;
-
 }
 
 void BHGraphics::scaleCamera(float s) {
     camera->scale = s;
+}
+
+void BHGraphics::setRadius(float r) {
+    // Maintain scale with expansion
+    float delta = camera->radius / r;
+    camera->scale *= delta;
+    camera->radius = r;
 }
 
 void BHGraphics::rotate(float y, float r, float p) {
@@ -251,12 +248,14 @@ Point2D BHGraphics::map3D(float x, float y, float z) {
             {camera->scale, 0,             0},
             {0,             camera->scale, 0}
     };
-    auto p3 = rotate3D(Point3D{x - 512, y - 512, z - 512});
-    float in[3] = {p3.x + 512, p3.y + 512, p3.z + 512};
-    auto p2 = matMultiply2D(in, proj);
-    p2.x += 512 - camera->scale * 512;
-    p2.y += 512 - camera->scale * 512;
 
+    auto p3 = rotate3D(Point3D{x, y, z});
+
+    float in[3] = {p3.x, p3.y, p3.z};
+
+    auto p2 = matMultiply2D(in, proj);
+    p2.x += 512;
+    p2.y += 512;
 
     return p2;
 }

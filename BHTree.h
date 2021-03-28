@@ -17,13 +17,16 @@
 #include "BHGraphics.h"
 
 class BHTree {
-public:
+private:
     BHTree *NW = nullptr, *NE = nullptr, *SW = nullptr, *SE = nullptr;
     Quad *q = nullptr;
+    bool internal = false;
     Body b = Body();
 
-    explicit BHTree(Quad *q) : q(q) {}
+    void rawInsert(Body body);
 
+
+public:
     ~BHTree() {
         delete NW;
         delete NE;
@@ -31,6 +34,8 @@ public:
         delete SE;
         delete q;
     }
+    BHTree() = default;
+    explicit BHTree(Quad *q) : q(q) {}
 
     void updateForce(Body *body);
 
@@ -38,7 +43,6 @@ public:
 
     void insert(Body body);
 
-    void rawInsert(Body body);
 };
 
 

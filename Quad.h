@@ -16,23 +16,23 @@
 
 class Quad {
 private:
-    double xm, ym, l;
+    float xm, ym, l;
 public:
-    Quad(double xm, double ym, double l) : xm(xm), ym(ym), l(l) {}
+    Quad(float xm, float ym, float l) : xm(xm), ym(ym), l(l) {}
 
     // This is not the wey
     bool contains(double x, double y) const {
-        double xs = xm - l / 2;
-        double xe = xm + l / 2;
-        double ys = ym - l / 2;
-        double ye = ym + l / 2;
-        return (x >= xs && x < xe && y >= ys && y < ye);
+        float xs = xm - l / 2;
+        float xe = xm + l / 2;
+        float ys = ym - l / 2;
+        float ye = ym + l / 2;
+        return (x >= xs && x <= xe && y >= ys && y <= ye);
     }
 
     void draw(BHGraphics *bh) const{
-        double sx = xm - l/2;
-        double sy = ym - l/2;
-        bh->setColor(255, 255, 255);
+        float sx = xm - l/2;
+        float sy = ym - l/2;
+        bh->setAlphaColor(255, 255, 255, 64);
         bh->drawRect(sx, sy, l, l);
     }
 

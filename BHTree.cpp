@@ -25,7 +25,6 @@ void BHTree::insert(Body body) {
     if (b.isSetDefault()) {
         b = body;
     } else {
-
         if (NW == nullptr) NW = new BHTree(q->NW());
         if (NE == nullptr) NE = new BHTree(q->NE());
         if (SW == nullptr) SW = new BHTree(q->SW());
@@ -61,7 +60,7 @@ void BHTree::updateForce(Body *body) {
             }
         } else {
             double sd = q->length() / (*body).distance(b);
-            if (sd < 0.9) {
+            if (sd < 0.90) {
                 body->addForce(b);
             } else {
                 NW->updateForce(body);
