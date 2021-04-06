@@ -16,12 +16,21 @@
 #include "Quad.h"
 #include "BHGraphics.h"
 
+struct BHConfig {
+    float theta = 0.9;
+    float dampening = 1E2;
+    float constant = 6.67408E-11;
+};
+
 class BHTree {
 private:
     BHTree *NW = nullptr, *NE = nullptr, *SW = nullptr, *SE = nullptr;
+    BHTree *children[4];
     Quad *q = nullptr;
-    bool internal = false;
     Body b = Body();
+    BHConfig bhCfg = BHConfig{};
+
+
 
     void rawInsert(Body body);
 
@@ -32,9 +41,17 @@ public:
         delete NE;
         delete SW;
         delete SE;
+
+
         delete q;
     }
+
+    void setConfig(BHConfig bh) {
+        bhCfg = bh;
+    }
+
     BHTree() = default;
+
     explicit BHTree(Quad *q) : q(q) {}
 
     void updateForce(Body *body);
@@ -42,6 +59,8 @@ public:
     void draw(BHGraphics *bh) const;
 
     void insert(Body body);
+
+    int countQuads();
 
 };
 

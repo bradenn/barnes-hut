@@ -12,6 +12,7 @@
 
 
 #include <iostream>
+#include <utility>
 
 using std::string;
 #define CHAR_WIDTH 7
@@ -21,15 +22,16 @@ using std::string;
 #include "homespun_font.h"
 
 BHGraphics::BHGraphics(int w, int h) : vw(w), vh(h) {
-    SDL_SetHint(SDL_HINT_RENDER_VSYNC, "0");
     SDL_Init(SDL_INIT_EVERYTHING);
-    window = SDL_CreateWindow("N-Bodies", 0, 0, w + 340 + 1, h
+    window = SDL_CreateWindow("N-Bodies", SDL_WINDOWPOS_CENTERED,
+                              SDL_WINDOWPOS_CENTERED, w + 1, h
                                                              + 1,
                               SDL_WINDOW_ALLOW_HIGHDPI);
     renderer = SDL_CreateRenderer(window, -1,
                                   SDL_RENDERER_ACCELERATED);
     camera = new Camera{0, 0, 0, 0, 0, 0, 0.7, 1024};
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
     SDL_RenderSetScale(renderer, 2, 2);
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
@@ -60,6 +62,7 @@ void BHGraphics::drawRect(float x, float y, float w, float h) {
     SDL_RenderDrawLineF(renderer, p1.x, p1.y, p3.x, p3.y);
     SDL_RenderDrawLineF(renderer, p3.x, p3.y, p4.x, p4.y);
     SDL_RenderDrawLineF(renderer, p2.x, p2.y, p4.x, p4.y);
+
 }
 
 void BHGraphics::fillRect(float x, float y, float w, float h) {
@@ -87,16 +90,25 @@ void BHGraphics::drawMeter(float x, float y, float w, float h, float p) {
     SDL_RenderFillRectF(renderer, r);
 }
 
-void BHGraphics::drawString(string s, int size, float x, float y) {
+void BHGraphics::drawString(string s, float size, float x, float y) {
     float pos = x;
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+
     for (char c : s) {
         int w = drawChar(c, size, pos, y);
         pos += w * size + (4 * log(size));
     }
 }
+float BHGraphics::drawStringGetLength(string s, float size, float x, float y) {
+    float pos = x;
 
-int BHGraphics::drawChar(char c, int size, float x, float y) {
+    for (char c : s) {
+        int w = drawChar(c, size, pos, y);
+        pos += w * size + (4 * log(size));
+    }
+    return pos - x + 16;
+}
+
+int BHGraphics::drawChar(char c, float size, float x, float y) {
     char ch = c & 0x7F;
     if (ch < ' ') {
         ch = 0;
@@ -133,8 +145,6 @@ d) {
     auto bbr = map3D(x, y + h, z);
     auto bbl = map3D(x + w, y + h, z);
 
-//    drawString(std::to_string(w), 2, (tfr.x + bfr.x) / 2, (tfr.y + bfr.y) / 2);
-
     SDL_RenderDrawLineF(renderer, tfr.x, tfr.y, bfr.x, bfr.y);
     SDL_RenderDrawLineF(renderer, tfr.x, tfr.y, tfl.x, tfl.y);
     SDL_RenderDrawLineF(renderer, tfl.x, tfl.y, bfl.x, bfl.y);
@@ -153,7 +163,6 @@ d) {
 
 void BHGraphics::drawPixel3D(float x, float y, float z) {
     Point2D loc = map3D(x, y, z);
-
     SDL_RenderDrawPointF(renderer, loc.x, loc.y);
 }
 
@@ -231,6 +240,12 @@ void BHGraphics::scaleCamera(float s) {
     camera->scale = s;
 }
 
+void BHGraphics::centerFull(float s) {
+    float delta = s / (camera->radius * camera->scale);
+    camera->scale *= delta;
+
+}
+
 void BHGraphics::setRadius(float r) {
     // Maintain scale with expansion
     float delta = camera->radius / r;
@@ -259,5 +274,29 @@ Point2D BHGraphics::map3D(float x, float y, float z) {
 
     return p2;
 }
+
+void
+BHGraphics::drawLabeledMeter(float x, float y, string label, float w, float h,
+                             float p, float offset) {
+    drawString(std::move(label), 1.5, x, y);
+    y = y + 15;
+    auto o = new SDL_FRect{x, y, w, h};
+    if (p < 0) {
+        x = x - abs(p) * (w - offset);
+    } else {
+        x = x + abs(p) * (w - offset);
+    }
+    auto r = new SDL_FRect{x + offset, y + 2, (w - offset) * abs(p), h - 4};
+    SDL_RenderDrawRectF(renderer, o);
+    SDL_RenderFillRectF(renderer, r);
+}
+
+void BHGraphics::drawCircle(float x, float y, float r) {
+    for(float i = 0; i < (2 * M_PI); i+=((2 * M_PI) / (r * 10))){
+
+        SDL_RenderDrawPointF(renderer, x + cos(i) * r, y + sin(i) * r);
+    }
+}
+
 
 

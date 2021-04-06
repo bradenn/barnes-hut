@@ -10,7 +10,7 @@ for(let i = -256; i < 256; i++){
         let z = 0
         let nz = simplex.noise2D(x, y);
         // console.log(nz)
-        if (nz === 0) {
+        if (nz > 0.7 && nz < 0.9) {
             console.log(`${x} ${y} ${z} 0 0 0 ${Math.random() * d}`);
         }
     }

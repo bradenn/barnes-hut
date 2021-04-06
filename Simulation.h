@@ -13,28 +13,50 @@
 
 #include "Body.h"
 #include "BHTree.h"
+#include "TestManager.h"
 #include <utility>
 #include <vector>
+
 using std::vector;
 
 struct Settings {
     bool useBarnes = true;
     bool renderQuads = false;
+    float radius = 0;
+    float scale = 1;
     float stepSize = 1;
-    float theta = 0.9;
-    float dampening = 2E-2;
+    bool showControls = false;
+    float rotP{}, rotY{};
 };
+
 
 class Simulation {
 private:
-    vector<Body*> bodies;
+    vector<Body *> bodies;
     BHGraphics *graphics;
-    BHTree lastTree;
+    Settings *settings = new Settings;
+    BHConfig *bhCfg = new BHConfig;
+    TestManager *testManager;
+
+    float currentStep = 0.0;
+    bool running = true;
+
+    Uint32 totalFrames = 0;
+    Uint32 startTime = SDL_GetTicks();
+    float fps = 0.0;
+
+    void simulate();
+
+    void showStats();
+
+    void handleEvents();
+
+    void render(const BHTree &b);
+
 public:
-    Simulation(vector<Body*> b): bodies(std::move(b)) {}
-    Settings *settings;
+    Simulation();
+
     void run();
-    void render();
 
 };
 

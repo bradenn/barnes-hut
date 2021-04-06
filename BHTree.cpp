@@ -50,18 +50,19 @@ void BHTree::rawInsert(Body body) {
     } else if (body.in(SE->q)) {
         SE->insert(body);
     }
+
 }
 
 void BHTree::updateForce(Body *body) {
     if(!b.isSetDefault()) {
         if (!b.isSetInternal()) {
             if (b.getHash() != body->getHash()) {
-                body->addForce(b);
+                body->addForce(b, bhCfg.dampening, bhCfg.constant);
             }
         } else {
             double sd = q->length() / (*body).distance(b);
-            if (sd < 0.90) {
-                body->addForce(b);
+            if (sd < bhCfg.theta) {
+                body->addForce(b, bhCfg.dampening, bhCfg.constant);
             } else {
                 NW->updateForce(body);
                 SW->updateForce(body);
@@ -70,4 +71,15 @@ void BHTree::updateForce(Body *body) {
             }
         }
     }
+}
+
+int BHTree::countQuads() {
+    int total = 1;
+    if (NW != nullptr) {
+        total += NW->countQuads();
+        total += NE->countQuads();
+        total += SW->countQuads();
+        total += SE->countQuads();
+    }
+    return total;
 }

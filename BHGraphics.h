@@ -54,7 +54,7 @@ public:
 
     void drawRect(float x, float y, float w, float h);
 
-    int drawChar(char c, int size, float x, float y);
+    int drawChar(char c, float size, float x, float y);
 
     void fillRect(float x, float y, float w, float h);
 
@@ -64,7 +64,8 @@ public:
 
     void setAlphaColor(int r, int g, int b, int a);
 
-    void drawString(string s, int size, float x, float y);
+    void drawLabeledMeter(float x, float y, string label, float w, float h,
+                          float p, float offset);
 
     void drawCube(float x, float y, float z, float w, float h, float d);
 
@@ -87,6 +88,14 @@ public:
     void drawLine(float x, float y);
 
     void drawLine(float x1, float y1, float x2, float y2);
+
+    void drawString(string s, float size, float x, float y);
+
+    void centerFull(float s);
+
+    void drawCircle(float x, float y, float r);
+
+    float drawStringGetLength(string s, float size, float x, float y);
 };
 
 

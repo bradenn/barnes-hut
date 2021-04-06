@@ -69,9 +69,7 @@ public:
         fz = 0.0;
     }
 
-    void addForce(Body b) {
-        float G = 6.67e-11; // Gravitational Constant
-        float DAMP = 1e1; // Dampening
+    void addForce(Body b, float DAMP, float G) {
 
         float dx = b.px - px;
         float dy = b.py - py;
@@ -109,7 +107,7 @@ public:
     }
 
     double getHash() const {
-        return px + py + vx + vy;
+        return px + py + vx + vy + mass;
     }
 
 
