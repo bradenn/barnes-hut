@@ -21,13 +21,26 @@ namespace fs = std::filesystem;
 
 TestManager::TestManager(vector<Body *> *bodies) : bodies(bodies) {
     findTests();
-    selected = tests.front();
-    currentTest = tests.front();
-    getBodies();
+    if(pathExists){
+        selected = tests.front();
+        currentTest = tests.front();
+        getBodies();
+    }
+
+
 }
 
 void TestManager::findTests() {
     string path = "./tests";
+    fs::directory_iterator di;
+    try{
+        di = fs::directory_iterator(path);
+    }catch(fs::filesystem_error &e) {
+        printf("%s", e.what());
+        pathExists = false;
+        return;
+    }
+    pathExists = true;
     for (const auto &entry : fs::directory_iterator(path)) {
         if (entry.path().extension().string() == ".in") {
             tests.push_back(

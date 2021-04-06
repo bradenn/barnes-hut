@@ -326,6 +326,8 @@ void Simulation::showStats() {
     graphics->drawString("Tests", 2, xOff + 10, lnOff += 30);
     float ptOff = 0;
     lnOff += 5;
+    if(testManager->getTests().size() >= 1){
+
     for (auto test : testManager->getTests()) {
         if (test == testManager->getTest()) {
             graphics->setAlphaColor(255, 200, 64, 255);
@@ -340,6 +342,12 @@ void Simulation::showStats() {
 
         }
         ptOff++;
+    }
+    }else{
+        graphics->setAlphaColor(255, 64, 64, 255);
+        graphics->drawString("'tests'  directory  not  found.", 1.5, xOff + 20,
+                             lnOff +=
+                20);
     }
     graphics->setAlphaColor(32, 32, 32, 128);
     graphics->fillRect(16, 1024, 1024 - 32, 32);
