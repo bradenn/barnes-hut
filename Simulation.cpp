@@ -289,15 +289,15 @@ void Simulation::showStats() {
             xOff + 20,
             lnOff += 20);
     graphics->setColor(200, 200, 200);
-    graphics->drawString("Resources", 2, xOff + 10, lnOff += 40);
-    graphics->setColor(128, 128, 128);
-    struct rusage r_usage;
-    getrusage(RUSAGE_SELF, &r_usage);
-    graphics->drawString("MaxRSS: " + ftos(r_usage.ru_maxrss / (1024 *
-                                                                1024)) +
-                         " Mb", 1.5, xOff + 20,
-                         lnOff += 25);
-    graphics->setColor(200, 200, 200);
+//    graphics->drawString("Resources", 2, xOff + 10, lnOff += 40);
+//    graphics->setColor(128, 128, 128);
+//    struct rusage r_usage;
+//    getrusage(RUSAGE_SELF, &r_usage);
+//    graphics->drawString("MaxRSS: " + ftos(r_usage.ru_maxrss / (1024 *
+//                                                                1024)) +
+//                         " Mb", 1.5, xOff + 20,
+//                         lnOff += 25);
+//    graphics->setColor(200, 200, 200);
     graphics->drawString("Camera", 2, xOff + 10, lnOff += 30);
     graphics->setColor(128, 128, 128);
     graphics->drawString("Scale: " + ftos(cam.scale), 1.5, xOff + 20, lnOff

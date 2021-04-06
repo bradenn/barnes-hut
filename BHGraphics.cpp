@@ -7,7 +7,7 @@
  * @author Braden Nicholson
  * @date 3/8/21
  */
-
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 
 

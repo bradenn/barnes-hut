@@ -10,7 +10,7 @@
 
 #ifndef BARNESHUT_BHGRAPHICS_H
 #define BARNESHUT_BHGRAPHICS_H
-
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 
 #include <iostream>
