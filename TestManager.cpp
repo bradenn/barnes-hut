@@ -9,10 +9,8 @@
  */
 
 #include <string>
-#include <iostream>
 #include <filesystem>
 #include <fstream>
-
 #include "TestManager.h"
 #include "Body.h"
 
@@ -41,10 +39,11 @@ void TestManager::findTests() {
         return;
     }
     pathExists = true;
-    for (const auto &entry : fs::directory_iterator(path)) {
+    for (const auto &entry : di) {
         if (entry.path().extension().string() == ".in") {
             tests.push_back(
-                    new Test{entry.path().string(), entry.path().filename()});
+                    new Test{entry.path().string(), entry.path().filename()
+                    .string()});
         }
     }
 

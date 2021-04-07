@@ -18,7 +18,7 @@
 
 struct BHConfig {
     float theta = 0.9;
-    float dampening = 1E2;
+    float dampening = 10;
     float constant = 6.67408E-11;
 };
 

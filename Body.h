@@ -46,13 +46,20 @@ public:
                       float istop,
                       float ostart,
                       float ostop) {
+        if (value < istart) return 0;
+        if (value > istop) return istop / 2;
         return ostart +
                (ostop - ostart) * ((value - istart) / (istop - istart));
     }
 
     void draw(BHGraphics *bh) const {
-        bh->setColor(
-                128, 128, 128);
+
+
+        bh->setAlphaColor(fmap(mass, 0, 256 * 3 - 1, 0, 255),
+                          fmap(mass, 0, 256 * 3 - 1, 0, 255),
+                          fmap(mass, 0, 256 * 3 - 1, 0, 255), 255);
+
+
         bh->drawPixel3D(px, py, pz);
     }
 

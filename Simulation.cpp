@@ -127,7 +127,7 @@ void Simulation::render(const BHTree &b) {
         b.draw(graphics);
     }
 
-
+    graphics->setAlphaColor(128, 128, 128, 128);
     graphics->drawCube(-settings->radius / 2, -settings->radius / 2,
                        -settings->radius / 2, settings->radius,
                        settings->radius,
@@ -277,7 +277,9 @@ void Simulation::showStats() {
                                           "Barnes-Hut"), 1.5,
             xOff + 20,
             lnOff += 25);
+    graphics->setColor(200, 200, 200);
     graphics->drawString("Barnes-Hut", 2, xOff + 10, lnOff += 30);
+    graphics->setColor(128, 128, 128);
     graphics->drawString("Outer Quad: " + ftos(cam.radius), 1.5, xOff + 20,
                          lnOff += 25);
     graphics->drawString(
