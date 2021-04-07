@@ -11,6 +11,7 @@
 #include <string>
 #include <filesystem>
 #include <fstream>
+#include <dirent.h>
 #include "TestManager.h"
 #include "Body.h"
 
@@ -29,23 +30,27 @@ TestManager::TestManager(vector<Body *> *bodies) : bodies(bodies) {
 }
 
 void TestManager::findTests() {
-    string path = "./tests";
-    fs::directory_iterator di;
-    try{
-        di = fs::directory_iterator(path);
-    }catch(fs::filesystem_error &e) {
-        printf("%s", e.what());
+
+    struct dirent *entry;
+    DIR *dir = opendir("./tests");
+
+    if (dir == nullptr) {
         pathExists = false;
         return;
     }
-    pathExists = true;
-    for (const auto &entry : di) {
-        if (entry.path().extension().string() == ".in") {
+
+    while ((entry = readdir(dir)) != nullptr) {
+        string name = entry->d_name;
+        name.length();
+        if(name.rfind(".in") != std::string::npos){
             tests.push_back(
-                    new Test{entry.path().string(), entry.path().filename()
-                    .string()});
+                    new Test{"./tests/" + string(entry->d_name), entry->d_name
+                    });
         }
+
     }
+    pathExists = true;
+    closedir(dir);
 
 }
 
