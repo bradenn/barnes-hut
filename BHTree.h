@@ -11,14 +11,14 @@
 #ifndef BARNESHUT_BHTREE_H
 #define BARNESHUT_BHTREE_H
 
-#include<iostream>
+#include <iostream>
 #include "Body.h"
 #include "Quad.h"
 #include "BHGraphics.h"
 
 struct BHConfig {
-    float theta = 0.9;
-    float dampening = 10;
+    float theta = 1.2;
+    float dampening = M_PI;
     float constant = 6.67408E-11;
 };
 
@@ -30,10 +30,7 @@ private:
     Body b = Body();
     BHConfig bhCfg = BHConfig{};
 
-
-
     void rawInsert(Body body);
-
 
 public:
     ~BHTree() {
@@ -41,8 +38,6 @@ public:
         delete NE;
         delete SW;
         delete SE;
-
-
         delete q;
     }
 

@@ -11,6 +11,7 @@
 #ifndef BARNESHUT_BHGRAPHICS_H
 #define BARNESHUT_BHGRAPHICS_H
 #define SDL_MAIN_HANDLED
+
 #include <SDL.h>
 
 #include <iostream>
@@ -26,10 +27,6 @@ struct Camera {
 
 struct Point3D {
     float x, y, z;
-};
-
-struct Rotation {
-    float p, r, y;
 };
 
 struct Point2D {
@@ -84,8 +81,6 @@ public:
     void drawMeter(float x, float y, float w, float h, float p);
 
     void setRadius(float r);
-
-    void drawLine(float x, float y);
 
     void drawLine(float x1, float y1, float x2, float y2);
 

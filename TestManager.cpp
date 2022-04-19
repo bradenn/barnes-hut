@@ -24,8 +24,6 @@ TestManager::TestManager(vector<Body *> *bodies) : bodies(bodies) {
         currentTest = tests.front();
         getBodies();
     }
-
-
 }
 
 void TestManager::findTests() {

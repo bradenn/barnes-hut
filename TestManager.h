@@ -27,7 +27,7 @@ struct Test {
 class TestManager {
 private:
     vector<Test *> tests;
-    bool pathExists;
+    bool pathExists{};
     Test *currentTest;
     Test *selected;
     vector<Body *> *bodies;

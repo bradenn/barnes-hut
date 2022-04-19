@@ -7,7 +7,9 @@
  * @author Braden Nicholson
  * @date 3/8/21
  */
+
 #define SDL_MAIN_HANDLED
+
 #include <SDL.h>
 
 
@@ -17,9 +19,9 @@
 using std::string;
 #define CHAR_WIDTH 7
 #define CHAR_HEIGHT 8
-
+#include "pixelfont.h"
 #include "BHGraphics.h"
-#include "homespun_font.h"
+
 
 BHGraphics::BHGraphics(int w, int h) : vw(w), vh(h) {
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -98,6 +100,7 @@ void BHGraphics::drawString(string s, float size, float x, float y) {
         pos += w * size + (4 * log(size));
     }
 }
+
 float BHGraphics::drawStringGetLength(string s, float size, float x, float y) {
     float pos = x;
 
@@ -292,8 +295,7 @@ BHGraphics::drawLabeledMeter(float x, float y, string label, float w, float h,
 }
 
 void BHGraphics::drawCircle(float x, float y, float r) {
-    for(float i = 0; i < (2 * M_PI); i+=((2 * M_PI) / (r * 10))){
-
+    for (float i = 0; i < (2 * M_PI); i += ((2 * M_PI) / (r * 10))) {
         SDL_RenderDrawPointF(renderer, x + cos(i) * r, y + sin(i) * r);
     }
 }

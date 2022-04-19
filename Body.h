@@ -11,6 +11,7 @@
 #ifndef BARNESHUT_BODY_H
 #define BARNESHUT_BODY_H
 
+#include<iostream>
 #include<cmath>
 #include "Quad.h"
 
@@ -19,15 +20,14 @@
  * ftp://ftp.cs.princeton.edu/pub/cs126/barnes-hut/Body.java
  */
 
-#include<iostream>
-// Stack overflow: https://stackoverflow.com/questions/17134839/how-does-the-map-function-in-processing-work
-
-
 class Body {
 private:
-    float px = 0, py = 0, pz = 0, vx = 0, vy = 0, vz = 0, fx = 0, fy = 0, fz
-            = 0;
+    float px = 0, py = 0, pz = 0,
+            vx = 0, vy = 0, vz = 0,
+            fx = 0, fy = 0, fz = 0;
+
     float mass = 0;
+
     bool isDefault = true;
     bool internal = true;
 
@@ -53,20 +53,17 @@ public:
     }
 
     void draw(BHGraphics *bh) const {
-
-
         bh->setAlphaColor(fmap(mass, 0, 256 * 3 - 1, 0, 255),
                           fmap(mass, 0, 256 * 3 - 1, 0, 255),
                           fmap(mass, 0, 256 * 3 - 1, 0, 255), 255);
 
-
         bh->drawPixel3D(px, py, pz);
     }
 
-    double distance(Body b) const {
-        double dx = px - b.px;
-        double dy = py - b.py;
-        double dz = pz - b.pz;
+    float distance(Body b) {
+        float dx = px - b.px;
+        float dy = py - b.py;
+        float dz = pz - b.pz;
         return sqrt(dx * dx + dy * dy + dz * dz);
     }
 
@@ -113,7 +110,7 @@ public:
         internal = true;
     }
 
-    double getHash() const {
+    float getHash() const {
         return px + py + vx + vy + mass;
     }
 

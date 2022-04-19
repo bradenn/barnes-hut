@@ -54,7 +54,7 @@ void BHTree::rawInsert(Body body) {
 }
 
 void BHTree::updateForce(Body *body) {
-    if(!b.isSetDefault()) {
+    if (!b.isSetDefault()) {
         if (!b.isSetInternal()) {
             if (b.getHash() != body->getHash()) {
                 body->addForce(b, bhCfg.dampening, bhCfg.constant);

@@ -82,12 +82,14 @@ void Simulation::simulate() {
     if (settings->useBarnes) {
         /* We loop through each body and update it's force recursively
          * through the tree. */
+
         for (auto body : bodies)
             bhTree.updateForce(body);
 
     } else {
         /* In the brute force attempt, we have to calculate the force on each
          * body on every other body, one by one. */
+#pragma omp parallel for default(none) shared(bhTree, bodies, bhCfg) num_threads(8)
         for (auto body : bodies)
             for (auto body2 : bodies)
                 if (body != body2)
