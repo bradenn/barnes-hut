@@ -17,7 +17,7 @@
 #include "BHGraphics.h"
 
 struct BHConfig {
-    float theta = 1.2;
+    float theta = 1.1;
     float dampening = M_PI;
     float constant = 6.67408E-11;
 };

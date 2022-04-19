@@ -20,6 +20,9 @@
  * ftp://ftp.cs.princeton.edu/pub/cs126/barnes-hut/Body.java
  */
 
+static float GLOBAL_MAX = 0;
+static float GLOBAL_MIN = 10;
+
 class Body {
 private:
     float px = 0, py = 0, pz = 0,
@@ -39,6 +42,28 @@ public:
         px += dt * vx;
         py += dt * vy;
         pz += dt * vz;
+
+        if (vx > GLOBAL_MAX) {
+            GLOBAL_MAX = vx;
+        }
+
+        if (vx < GLOBAL_MIN) {
+            GLOBAL_MIN = vx;
+        }
+
+        if (vy > GLOBAL_MAX) {
+            GLOBAL_MAX = vy;
+        }
+        if (vy < GLOBAL_MIN) {
+            GLOBAL_MIN = vy;
+        }
+
+        if (vz > GLOBAL_MAX) {
+            GLOBAL_MAX = vz;
+        }
+        if (vz < GLOBAL_MIN) {
+            GLOBAL_MIN = vz;
+        }
     }
 
     static float fmap(float value,
@@ -52,11 +77,10 @@ public:
                (ostop - ostart) * ((value - istart) / (istop - istart));
     }
 
-    void draw(BHGraphics *bh) const {
-        bh->setAlphaColor(fmap(mass, 0, 256 * 3 - 1, 0, 255),
-                          fmap(mass, 0, 256 * 3 - 1, 0, 255),
-                          fmap(mass, 0, 256 * 3 - 1, 0, 255), 255);
-
+    void draw(BHGraphics *bh) {
+        bh->setAlphaColor(fmap(vx, GLOBAL_MIN, GLOBAL_MAX, 32, 255),
+                          fmap(vy, GLOBAL_MIN, GLOBAL_MAX, 32, 255),
+                          fmap(vz, GLOBAL_MIN, GLOBAL_MAX, 32, 255), 255);
         bh->drawPixel3D(px, py, pz);
     }
 
@@ -80,7 +104,7 @@ public:
         float dz = b.pz - pz;
         float ds = sqrt(dx * dx + dy * dy + dz * dz);
 
-        float df = (G * mass * b.mass) / (ds * ds + DAMP * DAMP);
+        float df = (G * mass * b.mass) / (ds * ds + DAMP / 2);
         fx += df * (dx / ds);
         fy += df * (dy / ds);
         fz += df * (dz / ds);
@@ -135,6 +159,8 @@ public:
             (fx), fy
                                (fy), fz(fz), mass
                                (mass) {
+        GLOBAL_MIN = 10;
+        GLOBAL_MAX = 0;
         isDefault = false;
         internal = false;
     }

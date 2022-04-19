@@ -22,9 +22,12 @@ using std::vector;
 struct Settings {
     bool useBarnes = true;
     bool renderQuads = false;
+    bool useParallel = true;
+    int numThreads = 0;
+    int maxThreads = 0;
     float radius = 0;
     float scale = 1;
-    float stepSize = 1;
+    float stepSize = 0.25;
     bool showControls = false;
     float rotP{}, rotY{};
 };

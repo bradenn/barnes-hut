@@ -44,8 +44,13 @@ void TestManager::findTests() {
                     new Test{"./tests/" + string(entry->d_name), entry->d_name
                     });
         }
-
     }
+    struct {
+        bool operator()(Test *a, Test *b) const { return a->name < b->name; }
+    } sortName;
+
+    std::sort(tests.begin(), tests.end(), sortName);
+
     pathExists = true;
     closedir(dir);
 

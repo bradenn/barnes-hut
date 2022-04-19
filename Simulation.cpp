@@ -13,6 +13,7 @@
 #include <utility>
 #include "BHTree.h"
 #include "TestManager.h"
+#include "omp.h"
 
 string ftos(float in) {
     char *c = new char[9];
@@ -24,7 +25,7 @@ string ftos(float in) {
 
 float furthestBody(std::vector<Body *> &bodies) {
     float max = 0;
-    for (auto b : bodies) {
+    for (auto b: bodies) {
         auto l = b->ld();
         if (l > max) max = l;
     }
@@ -42,11 +43,16 @@ float fmap(float value,
 Simulation::Simulation() {
     graphics = new BHGraphics(1024 + 256 + 16, 1024 + 48);
     testManager = new TestManager(&bodies);
+
+    settings->maxThreads = omp_get_max_threads();
+    settings->numThreads = settings->maxThreads > 2 ? 2 : 1;
+
     graphics->centerFull(1024 - 32);
 }
 
 void Simulation::run() {
     while (running) {
+
         currentStep += settings->stepSize;
 
         simulate();
@@ -71,7 +77,7 @@ void Simulation::simulate() {
     /* Before each computation, we clear the force from the previous
      * iteration. This ensures the bodies do not accelerate into oblivion.
      * Once the bodies are prepared, we add them into the newly sized Tree. */
-    for (auto body : bodies) {
+    for (auto body: bodies) {
         body->clearForce();
         bhTree.insert(*body);
     }
@@ -82,16 +88,16 @@ void Simulation::simulate() {
     if (settings->useBarnes) {
         /* We loop through each body and update it's force recursively
          * through the tree. */
-
-        for (auto body : bodies)
+#pragma omp parallel for default(none) shared(bhTree, bodies) num_threads(settings->numThreads) if(settings->useParallel)
+        for (auto body: bodies)
             bhTree.updateForce(body);
 
     } else {
         /* In the brute force attempt, we have to calculate the force on each
          * body on every other body, one by one. */
-#pragma omp parallel for default(none) shared(bhTree, bodies, bhCfg) num_threads(8)
-        for (auto body : bodies)
-            for (auto body2 : bodies)
+#pragma omp parallel for default(none) shared(bhTree, bodies) num_threads(settings->numThreads) if(settings->useParallel)
+        for (auto body: bodies)
+            for (auto body2: bodies)
                 if (body != body2)
                     body->addForce(*body2, bhCfg->dampening, bhCfg->constant);
     }
@@ -103,7 +109,7 @@ void Simulation::simulate() {
      * gravity oon bodies at relativistic speeds, but we do not need to worry
      * about that here. Instead we calculate, apply, and render to simulate the
      * normal universe. */
-    for (auto body : bodies)
+    for (auto body: bodies)
         body->update(currentStep);
 
     /* Since we are drawing the quads later, we can set the lastTree to the
@@ -121,7 +127,7 @@ void Simulation::render(const BHTree &b) {
     graphics->setRadius(settings->radius);
 
     /* Render each individual body */
-    for (auto body : bodies)
+    for (auto body: bodies)
         body->draw(graphics);
 
     /* Render Quads if specified */
@@ -143,17 +149,36 @@ void Simulation::render(const BHTree &b) {
 
 }
 
+int overflow = 0;
+int underflow = 0;
+
 void Simulation::handleEvents() {
 
-    fps = (float) totalFrames /
-          (float) ((float) (SDL_GetTicks() - startTime)
-                   / 1000.0);
+    fps = (float) totalFrames / (float) ((float) (SDL_GetTicks() - startTime) / 1000.0);
 
     if (totalFrames >= 120) {
         totalFrames = 0;
         startTime = SDL_GetTicks();
     }
     totalFrames++;
+
+    if (fps < 60) {
+        // If the FPS is below 60 for more than 2 seconds, add a new core
+        if (underflow == 0) {
+            underflow = SDL_GetTicks();
+        } else if (SDL_GetTicks()-underflow >= 2000) {
+            settings->numThreads = settings->maxThreads > settings->numThreads ?  settings->numThreads + 1 : settings->numThreads;
+            underflow = 0;
+        }
+    }else if (fps > 90) {
+        // If the FPS is above 90 for more than 2 seconds, remove a core
+        if (overflow == 0) {
+            overflow = SDL_GetTicks();
+        } else if (SDL_GetTicks()-overflow >= 2000) {
+            settings->numThreads = 1 < settings->numThreads - 1 ?  settings->numThreads - 1 : settings->numThreads;
+            overflow = 0;
+        }
+    }
 
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0) {
@@ -187,10 +212,10 @@ void Simulation::handleEvents() {
                         settings->showControls = !settings->showControls;
                         break;
                     case ']':
-                        settings->stepSize += 1;
+                        settings->stepSize += 0.25;
                         break;
                     case '[':
-                        settings->stepSize -= 1;
+                        settings->stepSize -= 0.25;
                         break;
                     case ',':
                         bhCfg->theta += 0.1;
@@ -200,6 +225,9 @@ void Simulation::handleEvents() {
                         break;
                     case 'c':
                         settings->useBarnes = !settings->useBarnes;
+                        break;
+                    case 'p':
+                        settings->useParallel = !settings->useParallel;
                         break;
                     case 'a':
                         settings->rotY += M_PI / 8;
@@ -239,7 +267,7 @@ void Simulation::showStats() {
                                                               4);
     graphics->setColor(200, 200, 200);
     xOff += 16;
-    graphics->drawString("N-Bodies", 3, xOff, lnOff);
+    graphics->drawString("N-Bodies II", 3, xOff, lnOff);
     graphics->drawString("Statistics", 2, xOff + 10, lnOff += 40);
     graphics->setColor(128, 128, 128);
 
@@ -271,6 +299,7 @@ void Simulation::showStats() {
                          xOff +
                          20,
                          lnOff += 20);
+
     graphics->setColor(200, 200, 200);
     graphics->drawString("Computation", 2, xOff + 10, lnOff += 30);
     graphics->setColor(128, 128, 128);
@@ -279,6 +308,23 @@ void Simulation::showStats() {
                                           "Barnes-Hut"), 1.5,
             xOff + 20,
             lnOff += 25);
+    graphics->drawString(
+            "Parallel: " + string((settings->useParallel) ? "Parallel" :
+                                  "Sequential"), 1.5,
+            xOff + 20,
+            lnOff += 25);
+    graphics->drawString(
+            "Cores: " + string(std::to_string(settings->numThreads)) + "/" +
+            string(std::to_string(settings->maxThreads)), 1.5,
+            xOff + 20,
+            lnOff += 25);
+    graphics->drawString("Allocation: " +ftos(((float)settings->numThreads/(float)settings->maxThreads)*100) + "%", 1.5,
+                         xOff + 20,
+                         lnOff += 20);
+    graphics->drawMeter(xOff + 20, lnOff += 16, 200, 6,
+                        fmap(((float)settings->numThreads/(float)settings->maxThreads) * 100, 0,
+                             100, 0,
+                             1));
     graphics->setColor(200, 200, 200);
     graphics->drawString("Barnes-Hut", 2, xOff + 10, lnOff += 30);
     graphics->setColor(128, 128, 128);
@@ -330,28 +376,28 @@ void Simulation::showStats() {
     graphics->drawString("Tests", 2, xOff + 10, lnOff += 30);
     float ptOff = 0;
     lnOff += 5;
-    if(testManager->getTests().size() >= 1){
+    if (testManager->getTests().size() >= 1) {
 
-    for (auto test : testManager->getTests()) {
-        if (test == testManager->getTest()) {
-            graphics->setAlphaColor(255, 200, 64, 255);
-            graphics->drawString(test->name, 1.5, xOff + 20, lnOff += 20);
-        } else {
-            graphics->setColor(128, 128, 128);
-            graphics->drawString(test->name, 1.5, xOff + 20, lnOff += 20);
-        }
-        if (test == testManager->getSelected()) {
-            graphics->setAlphaColor(200, 96, 64, 255);
-            graphics->drawCircle(xOff + 12, lnOff + 6, 3);
+        for (auto test: testManager->getTests()) {
+            if (test == testManager->getTest()) {
+                graphics->setAlphaColor(255, 200, 64, 255);
+                graphics->drawString(test->name, 1.5, xOff + 20, lnOff += 20);
+            } else {
+                graphics->setColor(128, 128, 128);
+                graphics->drawString(test->name, 1.5, xOff + 20, lnOff += 20);
+            }
+            if (test == testManager->getSelected()) {
+                graphics->setAlphaColor(200, 96, 64, 255);
+                graphics->drawCircle(xOff + 12, lnOff + 6, 3);
 
+            }
+            ptOff++;
         }
-        ptOff++;
-    }
-    }else{
+    } else {
         graphics->setAlphaColor(255, 64, 64, 255);
         graphics->drawString("'tests'  directory  not  found.", 1.5, xOff + 20,
                              lnOff +=
-                20);
+                                     20);
     }
     graphics->setAlphaColor(32, 32, 32, 128);
     graphics->fillRect(16, 1024, 1024 - 32, 32);
@@ -378,7 +424,7 @@ void Simulation::showStats() {
 
 
     graphics->setColor(128, 128, 128);
-    graphics->drawString("Made by Braden Nicholson - 2021", 1.5, xOff,
+    graphics->drawString("Made by Braden Nicholson - 2021/2022", 1.5, xOff,
                          1024 - 8);
     graphics->drawString("https://bradenn.com", 1.5, xOff,
                          1024 + 8);

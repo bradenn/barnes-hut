@@ -1,7 +1,11 @@
-for(let i = -256; i < 256; i++){
-    for(let j = -256; j < 256; j++){
-        if(i % 8 === 0 && j % 8 === 0){
-            console.log(`${i} ${j} 0 0 0 0 ${Math.abs(i) + Math.abs(j) + 1}`);
-        }
+let density = 16;
+
+for (let i = -density; i < density; i++) {
+    for (let j = -density; j < density; j++) {
+        console.log(`${fixed(i * density)} ${fixed(j * density)} 0 0 0 0 ${Math.random() * 100 + 1000}`);
     }
+}
+
+function fixed(x) {
+    return Number.parseFloat(x).toFixed(10);
 }
