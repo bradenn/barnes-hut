@@ -67,6 +67,15 @@ void BHGraphics::drawRect(float x, float y, float w, float h) {
 
 }
 
+void BHGraphics::strokeRect(float x, float y, float w, float h) {
+    auto r = SDL_FRect{};
+    r.x = x;
+    r.y = y;
+    r.w = w;
+    r.h = h;
+    SDL_RenderDrawRectF(renderer, &r);
+}
+
 void BHGraphics::fillRect(float x, float y, float w, float h) {
     auto r = SDL_FRect{};
     r.x = x;

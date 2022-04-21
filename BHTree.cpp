@@ -10,25 +10,30 @@
 
 #include "BHTree.h"
 
+
 void BHTree::draw(BHGraphics *bh) const {
     if (q != nullptr) {
         q->draw(bh);
     }
-    if (NW != nullptr) NW->draw(bh);
-    if (NE != nullptr) NE->draw(bh);
-    if (SW != nullptr) SW->draw(bh);
-    if (SE != nullptr) SE->draw(bh);
+
+    for (int i = 0; i < NODES; ++i) {
+        if (children[i] != nullptr) {
+            children[i]->draw(bh);
+        }
+    }
 }
+
 
 void BHTree::insert(Body body) {
 
     if (b.isSetDefault()) {
         b = body;
     } else {
-        if (NW == nullptr) NW = new BHTree(q->NW());
-        if (NE == nullptr) NE = new BHTree(q->NE());
-        if (SW == nullptr) SW = new BHTree(q->SW());
-        if (SE == nullptr) SE = new BHTree(q->SE());
+        for (int i = 0; i < NODES; ++i) {
+            if (children[i] == nullptr) {
+                children[i] = new BHTree(q->SubTree(i));
+            }
+        }
 
         if (!b.isSetInternal()) {
             rawInsert(b);
@@ -41,14 +46,13 @@ void BHTree::insert(Body body) {
 
 void BHTree::rawInsert(Body body) {
     b.setInternal();
-    if (body.in(NW->q)) {
-        NW->insert(body);
-    } else if (body.in(NE->q)) {
-        NE->insert(body);
-    } else if (body.in(SW->q)) {
-        SW->insert(body);
-    } else if (body.in(SE->q)) {
-        SE->insert(body);
+
+    for (int i = 0; i < NODES; ++i) {
+        if (children[i] != nullptr) {
+            if (body.in(children[i]->q)) {
+                children[i]->insert(body);
+            }
+        }
     }
 
 }
@@ -64,10 +68,15 @@ void BHTree::updateForce(Body *body) {
             if (sd < bhCfg.theta) {
                 body->addForce(b, bhCfg.dampening, bhCfg.constant);
             } else {
-                NW->updateForce(body);
-                SW->updateForce(body);
-                NE->updateForce(body);
-                SE->updateForce(body);
+
+                for (auto &i: children) {
+                    if (i != nullptr) {
+                        if (body->in(i->q)) {
+                            i->updateForce(body);
+                        }
+                    }
+                }
+
             }
         }
     }
@@ -75,11 +84,12 @@ void BHTree::updateForce(Body *body) {
 
 int BHTree::countQuads() {
     int total = 1;
-    if (NW != nullptr) {
-        total += NW->countQuads();
-        total += NE->countQuads();
-        total += SW->countQuads();
-        total += SE->countQuads();
-    }
+
     return total;
+}
+
+BHTree::BHTree(Quad *q) : q(q) {
+    for (auto & i : children) {
+        i = nullptr;
+    }
 }

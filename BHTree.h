@@ -16,6 +16,8 @@
 #include "Quad.h"
 #include "BHGraphics.h"
 
+#define NODES 8
+
 struct BHConfig {
     float theta = 1.1;
     float dampening = M_PI;
@@ -24,8 +26,7 @@ struct BHConfig {
 
 class BHTree {
 private:
-    BHTree *NW = nullptr, *NE = nullptr, *SW = nullptr, *SE = nullptr;
-    BHTree *children[4];
+    BHTree *children[NODES];
     Quad *q = nullptr;
     Body b = Body();
     BHConfig bhCfg = BHConfig{};
@@ -34,10 +35,9 @@ private:
 
 public:
     ~BHTree() {
-        delete NW;
-        delete NE;
-        delete SW;
-        delete SE;
+        for (auto &item: children) {
+            delete item;
+        }
         delete q;
     }
 
@@ -47,7 +47,7 @@ public:
 
     BHTree() = default;
 
-    explicit BHTree(Quad *q) : q(q) {}
+    explicit BHTree(Quad *q);
 
     void updateForce(Body *body);
 

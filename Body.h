@@ -23,6 +23,8 @@
 static float GLOBAL_MAX = 0;
 static float GLOBAL_MIN = 10;
 
+static float largestBody = 0;
+
 class Body {
 private:
     float px = 0, py = 0, pz = 0,
@@ -81,7 +83,15 @@ public:
         bh->setAlphaColor(fmap(vx, GLOBAL_MIN, GLOBAL_MAX, 32, 255),
                           fmap(vy, GLOBAL_MIN, GLOBAL_MAX, 32, 255),
                           fmap(vz, GLOBAL_MIN, GLOBAL_MAX, 32, 255), 255);
-        bh->drawPixel3D(px, py, pz);
+        float radius = fmap(mass, 25, 200000, 4, 255) ;
+        for (float i = 0; i < M_PI * 2; i += M_PI_2 / 4) {
+            for (float j = 0; j < M_PI * 2; j += M_PI_2 / 4) {
+                float posX = cos(i) * sin(j) * radius;
+                float posZ = sin(i) * sin(j) * radius;
+                float posY = cos(j) * radius;
+                bh->drawPixel3D(px + posX, py + posY, pz + posZ);
+            }
+        }
     }
 
     float distance(Body b) {
@@ -104,7 +114,7 @@ public:
         float dz = b.pz - pz;
         float ds = sqrt(dx * dx + dy * dy + dz * dz);
 
-        float df = (G * mass * b.mass) / (ds * ds + DAMP / 2);
+        float df = (G * mass * b.mass) / (ds * ds + DAMP * DAMP);
         fx += df * (dx / ds);
         fy += df * (dy / ds);
         fz += df * (dz / ds);
@@ -119,7 +129,7 @@ public:
     }
 
     bool in(Quad *q) const {
-        return q->contains(px, py);
+        return q->contains(px, py, pz);
     }
 
     bool isSetDefault() const {
@@ -161,6 +171,9 @@ public:
                                (mass) {
         GLOBAL_MIN = 10;
         GLOBAL_MAX = 0;
+        if (mass > largestBody) {
+            largestBody = mass;
+        }
         isDefault = false;
         internal = false;
     }

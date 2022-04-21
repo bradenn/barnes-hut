@@ -1,7 +1,5 @@
-#include <iostream>
 #include "Simulation.h"
 #include <algorithm>
-#include <vector>
 
 int main() {
 

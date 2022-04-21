@@ -23,8 +23,9 @@ struct Settings {
     bool useBarnes = true;
     bool renderQuads = false;
     bool useParallel = true;
-    int numThreads = 0;
-    int maxThreads = 0;
+    int targetFps = 120;
+    int numThreads = 1;
+    int maxThreads = 1;
     float radius = 0;
     float scale = 1;
     float stepSize = 0.25;
@@ -45,7 +46,7 @@ private:
     bool running = true;
 
     Uint32 totalFrames = 0;
-    Uint32 startTime = SDL_GetTicks();
+    double startTime = SDL_GetTicks();
     float fps = 0.0;
 
     void simulate();

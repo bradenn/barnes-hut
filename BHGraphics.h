@@ -91,6 +91,10 @@ public:
     void drawCircle(float x, float y, float r);
 
     float drawStringGetLength(string s, float size, float x, float y);
+
+    void strokeRect(float x, float y, float w, float h);
+
+    void drawCircle3D(float x, float y, float z, float r);
 };
 
 

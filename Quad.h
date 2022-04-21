@@ -14,47 +14,75 @@
 
 #include "BHGraphics.h"
 
+static int largestQuad = 0;
+static int smallestQuad = 10;
+
+
 class Quad {
 private:
-    float xm, ym, l;
+    float xm, ym, zm, l;
 public:
-    Quad(float xm, float ym, float l) : xm(xm), ym(ym), l(l) {}
+    Quad(float xm, float ym, float zm, float l) : xm(xm), ym(ym), zm(zm), l(l) {}
 
     // This is not the wey
-    bool contains(double x, double y) const {
+    bool contains(double x, double y, double z) const {
         float xs = xm - l / 2;
         float xe = xm + l / 2;
         float ys = ym - l / 2;
         float ye = ym + l / 2;
-        return (x >= xs && x <= xe && y >= ys && y <= ye);
+        float zs = zm - l / 2;
+        float ze = zm + l / 2;
+        return (x >= xs && x <= xe && y >= ys && y <= ye && z >= zs && z <= ze);
     }
 
-    void draw(BHGraphics *bh) const{
-        float sx = xm - l/2;
-        float sy = ym - l/2;
-        bh->setAlphaColor(255, 255, 255, 64);
-        bh->drawRect(sx, sy, l, l);
+    void draw(BHGraphics *bh) const {
+
+        int c = (int)fmap(l, (float)smallestQuad, (float)largestQuad, 0, 128);
+        bh->setAlphaColor(255-c,255-c,255-c, 10);
+
+        bh->drawCube(xm-(l / 2), ym-(l / 2), zm-(l / 2), l, l, l);
     }
 
     double length() const {
         return l;
     }
-
-    Quad *NW() const {
-        return new Quad(xm - l / 4, ym - l / 4, l / 2);
+    static float fmap(float value,
+                      float istart,
+                      float istop,
+                      float ostart,
+                      float ostop) {
+        if (value < istart) return 0;
+        if (value > istop) return istop / 2;
+        return ostart +
+               (ostop - ostart) * ((value - istart) / (istop - istart));
     }
 
-    Quad *NE() const {
-        return new Quad(xm + l / 4, ym - l / 4, l / 2);
+
+
+    Quad *SubTree(int val) {
+        int octMap[8][3] = {
+                {-1, -1, -1},
+                {1,  -1, -1},
+                {-1, 1,  -1},
+                {1,  1,  -1},
+                {-1, -1, 1},
+                {1,  -1, 1},
+                {-1, 1,  1},
+                {1,  1,  1},
+        };
+        float qx = xm + (l / 4) * (float) octMap[val][0];
+        float qy = ym + (l / 4) * (float) octMap[val][1];
+        float qz = zm + (l / 4) * (float) octMap[val][2];
+        if(smallestQuad >(int) l) {
+            smallestQuad =(int) l;
+        }
+
+        if(largestQuad < (int)l) {
+            largestQuad = (int) l;
+        }
+        return new Quad(qx, qy, qz, l / 2);
     }
 
-    Quad *SW() const {
-        return new Quad(xm - l / 4, ym + l / 4, l / 2);
-    }
-
-    Quad *SE() const {
-        return new Quad(xm + l / 4, ym + l / 4, l / 2);
-    }
 };
 
 

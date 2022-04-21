@@ -11,9 +11,23 @@
 #include "Simulation.h"
 
 #include <utility>
+#include <unistd.h>
 #include "BHTree.h"
 #include "TestManager.h"
 #include "omp.h"
+
+//double getTime() {
+//    struct timespec s;
+//    clock_gettime(CLOCK_MONOTONIC_RAW, &s);
+//    double seconds = s.tv_sec * 1000.0 * 1000.0; // Seconds to Microseconds
+//    double nanoseconds = s.tv_nsec / 1000.0; // Nanoseconds to Microseconds
+//    return (seconds + nanoseconds) / 1000.0;
+//}
+
+double getTime() {
+    return omp_get_wtime() * 1000.0;
+}
+
 
 string ftos(float in) {
     char *c = new char[9];
@@ -24,12 +38,11 @@ string ftos(float in) {
 }
 
 float furthestBody(std::vector<Body *> &bodies) {
-    float max = 0;
+    float sum = 0;
     for (auto b: bodies) {
-        auto l = b->ld();
-        if (l > max) max = l;
+        sum += b->ld();
     }
-    return max;
+    return sum / (float) bodies.size();
 }
 
 float fmap(float value,
@@ -61,6 +74,8 @@ void Simulation::run() {
 }
 
 void Simulation::simulate() {
+
+    double tickBegin = getTime();
     /* Since the bodies tend to fling far a way and return, we can expand the
      * entire main quad to include every body. In some implementations, bodies
      * are removed when they leave the quad. */
@@ -70,7 +85,7 @@ void Simulation::simulate() {
     /* We recreate the main outer quad with the radius previously determined.
      * The center of the quad is set to (0, 0), meaning a quad of width of
      * 1024 will have a range of -512 to 512. */
-    Quad *q = new Quad(0, 0, width);
+    Quad *q = new Quad(0, 0, 0, width);
     BHTree bhTree = BHTree(q);
     bhTree.setConfig(*bhCfg);
 
@@ -79,28 +94,20 @@ void Simulation::simulate() {
      * Once the bodies are prepared, we add them into the newly sized Tree. */
     for (auto body: bodies) {
         body->clearForce();
-        bhTree.insert(*body);
     }
 
+    for (auto body: bodies) {
+        bhTree.insert(*body);
+    }
     /* The simulation settings allow for the simulation to run in brute-force
      * n^2 mode. This features is used to demonstrate the necessity of a quad
      * tree. */
-    if (settings->useBarnes) {
-        /* We loop through each body and update it's force recursively
-         * through the tree. */
 #pragma omp parallel for default(none) shared(bhTree, bodies) num_threads(settings->numThreads) if(settings->useParallel)
-        for (auto body: bodies)
-            bhTree.updateForce(body);
+    for (auto body: bodies)
+        for (auto body2: bodies)
+            if (body != body2)
+                body->addForce(*body2, bhCfg->dampening, bhCfg->constant);
 
-    } else {
-        /* In the brute force attempt, we have to calculate the force on each
-         * body on every other body, one by one. */
-#pragma omp parallel for default(none) shared(bhTree, bodies) num_threads(settings->numThreads) if(settings->useParallel)
-        for (auto body: bodies)
-            for (auto body2: bodies)
-                if (body != body2)
-                    body->addForce(*body2, bhCfg->dampening, bhCfg->constant);
-    }
 
     /* In the previous steps we only updated the body's force, now that they
      * are all complete, we can apply it. If we apply the force before we
@@ -118,6 +125,7 @@ void Simulation::simulate() {
 
     /* Finally we render the current iteration. */
     render(bhTree);
+
 }
 
 void Simulation::render(const BHTree &b) {
@@ -149,33 +157,35 @@ void Simulation::render(const BHTree &b) {
 
 }
 
-int overflow = 0;
-int underflow = 0;
+double overflow = 0;
+double underflow = 0;
 
 void Simulation::handleEvents() {
 
-    fps = (float) totalFrames / (float) ((float) (SDL_GetTicks() - startTime) / 1000.0);
+
+    fps = (float) totalFrames / (float) ((float) (getTime() - startTime) / 1000.0);
 
     if (totalFrames >= 120) {
         totalFrames = 0;
-        startTime = SDL_GetTicks();
+        startTime = getTime();
     }
     totalFrames++;
 
-    if (fps < 60) {
+    if (fps < settings->targetFps * 0.925) {
         // If the FPS is below 60 for more than 2 seconds, add a new core
         if (underflow == 0) {
-            underflow = SDL_GetTicks();
-        } else if (SDL_GetTicks()-underflow >= 2000) {
-            settings->numThreads = settings->maxThreads > settings->numThreads ?  settings->numThreads + 1 : settings->numThreads;
+            underflow = getTime();
+        } else if (getTime() - underflow >= 1500) {
+            settings->numThreads =
+                    settings->maxThreads > settings->numThreads ? settings->numThreads + 1 : settings->numThreads;
             underflow = 0;
         }
-    }else if (fps > 90) {
+    } else if (fps > settings->targetFps * 1.5) {
         // If the FPS is above 90 for more than 2 seconds, remove a core
-        if (overflow == 0) {
-            overflow = SDL_GetTicks();
-        } else if (SDL_GetTicks()-overflow >= 2000) {
-            settings->numThreads = 1 < settings->numThreads - 1 ?  settings->numThreads - 1 : settings->numThreads;
+        if (overflow == 0 && settings->numThreads > 2) {
+            overflow = getTime();
+        } else if (getTime() - overflow >= 1500) {
+            settings->numThreads = 1 < settings->numThreads - 1 ? settings->numThreads - 1 : settings->numThreads;
             overflow = 0;
         }
     }
@@ -289,12 +299,12 @@ void Simulation::showStats() {
     graphics->setColor(200, 200, 200);
     graphics->drawString("Rendering", 2, xOff + 10, lnOff += 30);
     graphics->setColor(128, 128, 128);
-    graphics->drawString("Frame Time: " + ftos((1000.0 / fps)
+    graphics->drawString("Frame Time: " + ftos((float) (((fps > 0) ? 1000.0 / fps : (1000.0 / 60.0)))
                          ) + "ms",
                          1.5, xOff +
                               20,
                          lnOff += 25);
-    graphics->drawString("FPS: " + ftos(fps) + "fps ",
+    graphics->drawString("FPS: " + ftos((fps > 0) ? fps : 60.0) + "fps ",
                          1.5,
                          xOff +
                          20,
@@ -317,14 +327,25 @@ void Simulation::showStats() {
             "Cores: " + string(std::to_string(settings->numThreads)) + "/" +
             string(std::to_string(settings->maxThreads)), 1.5,
             xOff + 20,
-            lnOff += 25);
-    graphics->drawString("Allocation: " +ftos(((float)settings->numThreads/(float)settings->maxThreads)*100) + "%", 1.5,
-                         xOff + 20,
-                         lnOff += 20);
-    graphics->drawMeter(xOff + 20, lnOff += 16, 200, 6,
-                        fmap(((float)settings->numThreads/(float)settings->maxThreads) * 100, 0,
-                             100, 0,
-                             1));
+            lnOff += 20);
+    lnOff += 16;
+    double a = 200.0 / (settings->maxThreads);
+    double b = 180.0 / (settings->maxThreads);
+
+    for (int i = 0; i < settings->maxThreads; ++i) {
+        if (settings->numThreads > i) {
+            graphics->setColor(128, 128, 128);
+            graphics->fillRect(xOff + 20 + (float) i * a, lnOff, b, 6);
+        } else {
+            graphics->setColor(96, 96, 96);
+            graphics->strokeRect(xOff + 20 + (float) i * a, lnOff, b, 6);
+        }
+    }
+
+//    graphics->drawMeter(xOff + 20, lnOff += 16, 200, 6,
+//                        fmap(((float) settings->numThreads / (float) settings->maxThreads) * 100, 0,
+//                             100, 0,
+//                             1));
     graphics->setColor(200, 200, 200);
     graphics->drawString("Barnes-Hut", 2, xOff + 10, lnOff += 30);
     graphics->setColor(128, 128, 128);
