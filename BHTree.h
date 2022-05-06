@@ -19,8 +19,8 @@
 #define NODES 8
 
 struct BHConfig {
-    float theta = 1.1;
-    float dampening = M_PI;
+    float theta = 1.4;
+    float dampening = 1;
     float constant = 6.67408E-11;
 };
 

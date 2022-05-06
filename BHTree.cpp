@@ -47,14 +47,9 @@ void BHTree::insert(Body body) {
 void BHTree::rawInsert(Body body) {
     b.setInternal();
 
-    for (int i = 0; i < NODES; ++i) {
-        if (children[i] != nullptr) {
-            if (body.in(children[i]->q)) {
-                children[i]->insert(body);
-            }
-        }
-    }
-
+    for (auto &i: children)
+        if (i != nullptr)
+            if (body.in(i->q)) i->insert(body);
 }
 
 void BHTree::updateForce(Body *body) {
@@ -89,7 +84,7 @@ int BHTree::countQuads() {
 }
 
 BHTree::BHTree(Quad *q) : q(q) {
-    for (auto & i : children) {
+    for (auto &i: children) {
         i = nullptr;
     }
 }

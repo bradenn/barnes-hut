@@ -20,8 +20,8 @@
  * ftp://ftp.cs.princeton.edu/pub/cs126/barnes-hut/Body.java
  */
 
-static float GLOBAL_MAX = 0;
-static float GLOBAL_MIN = 10;
+static float GLOBAL_MAX = 2;
+static float GLOBAL_MIN = 0;
 
 static float largestBody = 0;
 
@@ -31,7 +31,7 @@ private:
             vx = 0, vy = 0, vz = 0,
             fx = 0, fy = 0, fz = 0;
 
-    float mass = 0;
+    float mass = 0, radius = 0;
 
     bool isDefault = true;
     bool internal = true;
@@ -44,28 +44,6 @@ public:
         px += dt * vx;
         py += dt * vy;
         pz += dt * vz;
-
-        if (vx > GLOBAL_MAX) {
-            GLOBAL_MAX = vx;
-        }
-
-        if (vx < GLOBAL_MIN) {
-            GLOBAL_MIN = vx;
-        }
-
-        if (vy > GLOBAL_MAX) {
-            GLOBAL_MAX = vy;
-        }
-        if (vy < GLOBAL_MIN) {
-            GLOBAL_MIN = vy;
-        }
-
-        if (vz > GLOBAL_MAX) {
-            GLOBAL_MAX = vz;
-        }
-        if (vz < GLOBAL_MIN) {
-            GLOBAL_MIN = vz;
-        }
     }
 
     static float fmap(float value,
@@ -79,19 +57,21 @@ public:
                (ostop - ostart) * ((value - istart) / (istop - istart));
     }
 
-    void draw(BHGraphics *bh) {
-        bh->setAlphaColor(fmap(vx, GLOBAL_MIN, GLOBAL_MAX, 32, 255),
-                          fmap(vy, GLOBAL_MIN, GLOBAL_MAX, 32, 255),
-                          fmap(vz, GLOBAL_MIN, GLOBAL_MAX, 32, 255), 255);
-        float radius = fmap(mass, 25, 200000, 4, 255) ;
-        for (float i = 0; i < M_PI * 2; i += M_PI_2 / 4) {
-            for (float j = 0; j < M_PI * 2; j += M_PI_2 / 4) {
-                float posX = cos(i) * sin(j) * radius;
-                float posZ = sin(i) * sin(j) * radius;
-                float posY = cos(j) * radius;
-                bh->drawPixel3D(px + posX, py + posY, pz + posZ);
-            }
-        }
+    void draw(BHGraphics *bh, float min, float max, float maxMass) {
+
+//        bh->setColor(fmap(vx, min, max, 32, 200),
+//                     fmap(vy, min, max, 32, 200),
+//                     fmap(vz, min, max, 32, 200));
+
+
+        radius = fmap(mass, 0, maxMass, 1, 25);
+
+        bh->drawSphere(px, py, pz, radius);
+
+    }
+
+    float getMass() {
+        return mass;
     }
 
     float distance(Body b) {
@@ -114,10 +94,50 @@ public:
         float dz = b.pz - pz;
         float ds = sqrt(dx * dx + dy * dy + dz * dz);
 
-        float df = (G * mass * b.mass) / (ds * ds + DAMP * DAMP);
+        float df = (G * mass * b.mass) / (ds * ds + DAMP);
         fx += df * (dx / ds);
         fy += df * (dy / ds);
         fz += df * (dz / ds);
+    }
+
+    float avgForce() {
+        return (vx + vy + vz) / 3;
+    }
+
+
+    bool handleCollision(Body body) {
+        //((m1 – m2)u1 + 2m2u2) / (m1 + m2)
+
+        if (distance(body) <= radius * 2) {
+
+            float m1 = mass;
+
+            float m2 = body.mass;
+            // vx += dt * fx / mass
+            float dx = body.px-px;
+            float dy = body.py-py;
+            float dz = body.pz-pz;
+            float ds = sqrt(dx * dx + dy * dy + dz * dz);
+
+            float ux1 = vx;
+            float ux2 = body.vx;
+            float vdx = ((m1 - m2) * ux1 + 2 * m2 * ux2) / (m1 + m2);
+
+            fx = (dx / ds) * vdx;
+
+            float uy1 = vy;
+            float uy2 = body.vy;
+            float vdy = ((m1 - m2) * uy1 + 2 * m2 * uy2) / (m1 + m2);
+
+            fy = (dy / ds) * vdy;
+
+            float uz1 = vz;
+            float uz2 = body.vz;
+            float vdz =  ((m1 - m2) * uz1 + 2 * m2 * uz2) / (m1 + m2);
+
+            fz = (dz / ds) * vdz;
+        }
+        return false;
     }
 
     float ld() const {
@@ -127,6 +147,7 @@ public:
         if (abs(pz) > l) l = abs(pz);
         return l;
     }
+
 
     bool in(Quad *q) const {
         return q->contains(px, py, pz);
@@ -174,6 +195,7 @@ public:
         if (mass > largestBody) {
             largestBody = mass;
         }
+
         isDefault = false;
         internal = false;
     }

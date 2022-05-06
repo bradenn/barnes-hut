@@ -20,17 +20,17 @@
 using std::vector;
 
 struct Settings {
-    bool useBarnes = true;
+    bool useBarnes = false;
     bool renderQuads = false;
     bool useParallel = true;
-    int targetFps = 120;
+    int targetFps = 60;
     int numThreads = 1;
     int maxThreads = 1;
     float radius = 0;
     float scale = 1;
-    float stepSize = 0.25;
+    float stepSize = 1;
     bool showControls = false;
-    float rotP{}, rotY{};
+    float rotP = 45, rotY = 45;
 };
 
 
@@ -42,12 +42,11 @@ private:
     BHConfig *bhCfg = new BHConfig;
     TestManager *testManager;
 
+    double tickBegin = 0.0;
     float currentStep = 0.0;
     bool running = true;
-
-    Uint32 totalFrames = 0;
-    double startTime = SDL_GetTicks();
     float fps = 0.0;
+    float ups = 0.0;
 
     void simulate();
 
@@ -55,13 +54,22 @@ private:
 
     void handleEvents();
 
-    void render(const BHTree &b);
-
+    static float fmap(float value,
+                      float istart,
+                      float istop,
+                      float ostart,
+                      float ostop) {
+        if (value < istart) return 0;
+        if (value > istop) return istop / 2;
+        return ostart +
+               (ostop - ostart) * ((value - istart) / (istop - istart));
+    }
 public:
     Simulation();
 
     void run();
 
+    void render();
 };
 
 

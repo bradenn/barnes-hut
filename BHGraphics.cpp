@@ -15,105 +15,169 @@
 
 #include <iostream>
 #include <utility>
+#include <SDL_opengl.h>
+#include <OpenGL/glu.h>
+#include <OpenGL/gl.h>
 
 using std::string;
 #define CHAR_WIDTH 7
 #define CHAR_HEIGHT 8
+
 #include "pixelfont.h"
 #include "BHGraphics.h"
 
 
 BHGraphics::BHGraphics(int w, int h) : vw(w), vh(h) {
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
     SDL_Init(SDL_INIT_EVERYTHING);
-    window = SDL_CreateWindow("N-Bodies", SDL_WINDOWPOS_CENTERED,
-                              SDL_WINDOWPOS_CENTERED, w + 1, h
-                                                             + 1,
-                              SDL_WINDOW_ALLOW_HIGHDPI);
-    renderer = SDL_CreateRenderer(window, -1,
-                                  SDL_RENDERER_ACCELERATED);
-    camera = new Camera{0, 0, 0, 0, 0, 0, 0.7, 1024};
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_Init(SDL_INIT_VIDEO);
 
-    SDL_RenderSetScale(renderer, 2, 2);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+
+
+    window = SDL_CreateWindow("N-Bodies", SDL_WINDOWPOS_CENTERED,
+                              SDL_WINDOWPOS_CENTERED, w + 1, h + 1,
+                              SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI);
+
+    glContext = SDL_GL_CreateContext(window);
+    camera = new Camera{0, 0, 0, 45, 0, 45, 1, 1024};
+
+
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetSwapInterval(1);
+
+    quad = gluNewQuadric();
+    glLoadIdentity();
+    glOrtho(0, vw, vh, 0, -2048, 2048);
+
+
+//    SDL_RenderSetScale(renderer, 2, 2);
+//    SDL_RenderClear(renderer);
+//    SDL_RenderPresent(renderer);
 }
 
 
 BHGraphics::~BHGraphics() {
+    gluDeleteQuadric(quad);
     SDL_DestroyRenderer(renderer);
+    SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
 
 void BHGraphics::clear() {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(renderer);
+//    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+//    SDL_RenderClear(renderer);
+
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 }
 
 void BHGraphics::render() {
-    SDL_RenderPresent(renderer);
+
+//    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+//    SDL_RenderPresent(renderer);
+    SDL_GL_SwapWindow(window);
 }
 
-void BHGraphics::drawRect(float x, float y, float w, float h) {
-    Point2D p1 = map3D(x, y, 0);
-    Point2D p2 = map3D(x + w, y, 0);
-    Point2D p3 = map3D(x, y + h, 0);
-    Point2D p4 = map3D(x + w, y + h, 0);
-    SDL_RenderDrawLineF(renderer, p1.x, p1.y, p2.x, p2.y);
-    SDL_RenderDrawLineF(renderer, p1.x, p1.y, p3.x, p3.y);
-    SDL_RenderDrawLineF(renderer, p3.x, p3.y, p4.x, p4.y);
-    SDL_RenderDrawLineF(renderer, p2.x, p2.y, p4.x, p4.y);
+void BHGraphics::beginSimulationFrame() {
+    glPushMatrix();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
 
+    glLoadIdentity();
+
+    glOrtho(-1024, 1024, -1024, 1024, -1024, 1024);
+    glMatrixMode(GL_MODELVIEW);
+    gluPerspective(90, (double) vh / (double) vw, -1000, 1000);
+
+
+    glMatrixMode(GL_MODELVIEW);
+    glScalef(camera->scale, camera->scale, camera->scale);
+
+
+    glRotatef(camera->pitch, 1, 0, 0);
+    glRotatef(-camera->yaw, 0, 1, 0);
+
+
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+
+    glEnable(GL_COLOR_MATERIAL);
+
+
+
+}
+
+void BHGraphics::endSimulationFrame() {
+    glDisable(GL_COLOR_MATERIAL);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_LIGHT0);
+    glDisable(GL_BLEND);
+    glPopMatrix();
 }
 
 void BHGraphics::strokeRect(float x, float y, float w, float h) {
-    auto r = SDL_FRect{};
-    r.x = x;
-    r.y = y;
-    r.w = w;
-    r.h = h;
-    SDL_RenderDrawRectF(renderer, &r);
+    glBegin(GL_POLYGON);
+    glVertex2f(x, y);
+    glVertex2f(x + w, y);
+    glVertex2f(x + w, y + h);
+    glVertex2f(x, y + h);
+    glEnd();
 }
 
 void BHGraphics::fillRect(float x, float y, float w, float h) {
-    auto r = SDL_FRect{};
-    r.x = x;
-    r.y = y;
-    r.w = w;
-    r.h = h;
-    SDL_RenderFillRectF(renderer, &r);
+    glBegin(GL_POLYGON);
+    glVertex2f(x, y);
+    glVertex2f(x + w, y);
+    glVertex2f(x + w, y + h);
+    glVertex2f(x, y + h);
+    glEnd();
 }
 
 void BHGraphics::setColor(int r, int g, int b) {
-    SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
+    GLfloat div = 255.0;
+    glColor3f((GLfloat) r / div, (GLfloat) g / div, (GLfloat) b / div);
 }
 
 void BHGraphics::setAlphaColor(int r, int g, int b, int a) {
-    SDL_SetRenderDrawColor(renderer, r, g, b, a);
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    GLfloat div = 255.0;
+    glColor4f((GLfloat) r / div, (GLfloat) g / div, (GLfloat) b / div, (GLfloat) a / div);
 }
 
 void BHGraphics::drawMeter(float x, float y, float w, float h, float p) {
-    auto o = new SDL_FRect{x, y, w, h};
-    auto r = new SDL_FRect{x + 2, y + 2, (w - 4) * p, h - 4};
-    SDL_RenderDrawRectF(renderer, o);
-    SDL_RenderFillRectF(renderer, r);
+    strokeRect(x, y, w, h);
+    fillRect(x + 2, y + 2, (w - 4) * p, h - 4);
 }
 
 void BHGraphics::drawString(string s, float size, float x, float y) {
     float pos = x;
 
-    for (char c : s) {
+    for (char c: s) {
         int w = drawChar(c, size, pos, y);
         pos += w * size + (4 * log(size));
     }
 }
 
+
+void BHGraphics::drawString3D(string s, float size, float x, float y, float z) {
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    drawString(std::move(s), size, 0, 0);
+    glPopMatrix();
+}
+
 float BHGraphics::drawStringGetLength(string s, float size, float x, float y) {
     float pos = x;
 
-    for (char c : s) {
+    for (char c: s) {
         int w = drawChar(c, size, pos, y);
         pos += w * size + (4 * log(size));
     }
@@ -146,40 +210,116 @@ int BHGraphics::drawChar(char c, float size, float x, float y) {
 }
 
 
+void BHGraphics::drawOrigin(float x, float y, float z, float w, float h, float d) {
+    glBegin(GL_LINES);
+    glColor3f(0.5, 0.5, 1);
+    glVertex3f(x, y, z - d);
+    glVertex3f(x, y, z + d);
+
+    glColor3f(0.5, 1, 0.5);
+    glVertex3f(x - w, y, z);
+    glVertex3f(x + w, y, z);
+
+    glColor3f(1, 0.5, 0.5);
+    glVertex3f(x, y - h, z);
+    glVertex3f(x, y + h, z);
+    glEnd();
+
+    glColor3f(1, 0.5, 0.5);
+    drawString("-x", 6, x - w, y);
+    drawString("+x", 6, x + w, y);
+
+    glColor3f(0.5, 1, 0.5);
+    drawString3D("-y", 6, x - w, y, z);
+    drawString3D("+y", 6, x + w, y, z);
+
+    glColor3f(0.5, 0.5, 1);
+    drawString3D("-z", 6, x, y, z - d);
+    drawString3D("+z", 6, x, y, z + d);
+
+
+
+}
+
+
 void BHGraphics::drawCube(float x, float y, float z, float w, float h, float
 d) {
-    auto tfr = map3D(x, y, z + d);
-    auto tfl = map3D(x + w, y, z + d);
-    auto bfr = map3D(x, y + h, z + d);
-    auto bfl = map3D(x + w, y + h, z + d);
-    auto tbr = map3D(x, y, z);
-    auto tbl = map3D(x + w, y, z);
-    auto bbr = map3D(x, y + h, z);
-    auto bbl = map3D(x + w, y + h, z);
 
-    SDL_RenderDrawLineF(renderer, tfr.x, tfr.y, bfr.x, bfr.y);
-    SDL_RenderDrawLineF(renderer, tfr.x, tfr.y, tfl.x, tfl.y);
-    SDL_RenderDrawLineF(renderer, tfl.x, tfl.y, bfl.x, bfl.y);
-    SDL_RenderDrawLineF(renderer, bfr.x, bfr.y, bfl.x, bfl.y);
 
-    SDL_RenderDrawLineF(renderer, tfr.x, tfr.y, tbr.x, tbr.y);
-    SDL_RenderDrawLineF(renderer, bfr.x, bfr.y, bbr.x, bbr.y);
-    SDL_RenderDrawLineF(renderer, tfl.x, tfl.y, tbl.x, tbl.y);
-    SDL_RenderDrawLineF(renderer, bfl.x, bfl.y, bbl.x, bbl.y);
+    glBegin(GL_LINES);
+    glColor3f(0.5, 0.5, 0.5);
+    glVertex3f(x, y, z + d);
 
-    SDL_RenderDrawLineF(renderer, tbr.x, tbr.y, tbl.x, tbl.y);
-    SDL_RenderDrawLineF(renderer, tbr.x, tbr.y, bbr.x, bbr.y);
-    SDL_RenderDrawLineF(renderer, bbr.x, bbr.y, bbl.x, bbl.y);
-    SDL_RenderDrawLineF(renderer, bbl.x, bbl.y, tbl.x, tbl.y);
+    glVertex3f(x + w, y, z + d);
+
+    glVertex3f(x, y, z);
+
+    glVertex3f(x + w, y, z);
+
+    glVertex3f(x, y + h, z);
+
+    glVertex3f(x + w, y + h, z);
+
+    glVertex3f(x + w, y + h, z + d);
+
+    glVertex3f(x, y + h, z + d);
+
+    // Next
+
+    glVertex3f(x, y, z + d);
+
+    glVertex3f(x, y, z);
+
+    glVertex3f(x + w, y, z + d);
+
+    glVertex3f(x + w, y, z);
+
+
+    glVertex3f(x, y + h, z + d);
+
+    glVertex3f(x, y + h, z);
+
+    glVertex3f(x + w, y + h, z + d);
+
+    glVertex3f(x + w, y + h, z);
+
+
+    glVertex3f(x, y + h, z);
+    glVertex3f(x, y, z);
+
+    glVertex3f(x + w, y + h, z);
+    glVertex3f(x + w, y, z);
+
+    glVertex3f(x + w, y + h, z + d);
+    glVertex3f(x + w, y, z + d);
+
+    glVertex3f(x, y + h, z + d);
+    glVertex3f(x, y, z + d);
+
+
+    glEnd();
+
 }
 
-void BHGraphics::drawPixel3D(float x, float y, float z) {
-    Point2D loc = map3D(x, y, z);
-    SDL_RenderDrawPointF(renderer, loc.x, loc.y);
+
+static float fmap(float value,
+                  float istart,
+                  float istop,
+                  float ostart,
+                  float ostop) {
+    if (value < istart) return 0;
+    if (value > istop) return istop / 2;
+    return ostart +
+           (ostop - ostart) * ((value - istart) / (istop - istart));
 }
 
-void BHGraphics::drawLine(float x1, float y1, float x2, float y2) {
-    SDL_RenderDrawLineF(renderer, x1, y1, x2, y2);
+void BHGraphics::drawSphere(float x, float y, float z, float r) {
+    glPushMatrix();
+    auto q = gluNewQuadric();
+    glTranslatef(x, y, z);
+    gluSphere(q, r, 16, 16);
+    gluDeleteQuadric(q);
+    glPopMatrix();
 }
 
 Point3D matMultiply(const float vec[3], float mat[3][3]) {
@@ -188,6 +328,7 @@ Point3D matMultiply(const float vec[3], float mat[3][3]) {
     int colsB = 1;
 
     auto result = new float[3];
+
 
     for (int i = 0; i < rowsA; i++) {
         for (int j = 0; j < colsB; j++) {
@@ -198,6 +339,7 @@ Point3D matMultiply(const float vec[3], float mat[3][3]) {
             result[i] = sum;
         }
     }
+
     auto p = Point3D{result[0], result[1], result[2]};
     delete[]result;
     return p;
@@ -267,7 +409,7 @@ void BHGraphics::setRadius(float r) {
 
 void BHGraphics::rotate(float y, float r, float p) {
     camera->yaw = y;
-    camera->pitch = p;
+    camera->pitch = r;
 }
 
 Point2D BHGraphics::map3D(float x, float y, float z) {
@@ -286,28 +428,35 @@ Point2D BHGraphics::map3D(float x, float y, float z) {
 
     return p2;
 }
-
-void
-BHGraphics::drawLabeledMeter(float x, float y, string label, float w, float h,
-                             float p, float offset) {
-    drawString(std::move(label), 1.5, x, y);
-    y = y + 15;
-    auto o = new SDL_FRect{x, y, w, h};
-    if (p < 0) {
-        x = x - abs(p) * (w - offset);
-    } else {
-        x = x + abs(p) * (w - offset);
-    }
-    auto r = new SDL_FRect{x + offset, y + 2, (w - offset) * abs(p), h - 4};
-    SDL_RenderDrawRectF(renderer, o);
-    SDL_RenderFillRectF(renderer, r);
-}
+//
+//void
+//BHGraphics::drawLabeledMeter(float x, float y, string label, float w, float h,
+//                             float p, float offset) {
+//    drawString(std::move(label), 1.5, x, y);
+//    y = y + 15;
+//    auto o = new SDL_FRect{x, y, w, h};
+//    if (p < 0) {
+//        x = x - abs(p) * (w - offset);
+//    } else {
+//        x = x + abs(p) * (w - offset);
+//    }
+//    auto r = new SDL_FRect{x + offset, y + 2, (w - offset) * abs(p), h - 4};
+//    SDL_RenderDrawRectF(renderer, o);
+//    SDL_RenderFillRectF(renderer, r);
+//}
 
 void BHGraphics::drawCircle(float x, float y, float r) {
-    for (float i = 0; i < (2 * M_PI); i += ((2 * M_PI) / (r * 10))) {
-        SDL_RenderDrawPointF(renderer, x + cos(i) * r, y + sin(i) * r);
+    float points = r;
+    glBegin(GL_LINES);
+    for (int i = 0; i < (int) points; i++) {
+        float phiDx = (float) (M_PI * 2) / points;
+        float phi = phiDx * (float) i;
+        glVertex3f(x + r * cos(phi), y + r * sin(phi), 0);
     }
+    glEnd();
+
 }
+
 
 
 

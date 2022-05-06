@@ -63,6 +63,7 @@ void TestManager::getBodies() {
         while (!file.eof()) {
             float px = 0, py = 0, pz = 0, vx = 0, vy = 0, vz = 0, mass = 0;
             file >> px;
+            if(px == 0) break;
             file >> py;
             file >> pz;
             file >> vx;

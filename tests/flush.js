@@ -1,13 +1,14 @@
 let density = 16;
 
 
-let distance = 1000
-let mass = 10000
+let mass = 10000;
+let distance = 50;
 
-for (let i = 0; i < 1024; i++) {
-    console.log(`${fixed(distance - Math.random() * distance * 2)} ${fixed(distance - Math.random() * distance* 2)} ${fixed(distance - Math.random() * distance* 2)} 0 0 0 ${25 + (Math.random() * mass)}`);
+for (let i = 0; i < 32; i++) {
+    console.log(`${fixed(distance - Math.random() * distance * 2)} ${fixed(distance - Math.random() * distance* 2)} ${fixed(distance - Math.random() * distance* 2)} 0 0 0 ${((Math.random() * mass + mass) 
+   + mass)}`);
 }
 
 function fixed(x) {
-    return Number.parseFloat(x).toFixed(10);
+    return Number.parseFloat(x).toFixed(16);
 }
